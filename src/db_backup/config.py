@@ -38,10 +38,19 @@ class StorageConfig:
 
 
 @dataclass
+class NotificationsConfig:
+    enabled: bool = False
+    discord_webhook_url: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+
+
+@dataclass
 class AppConfig:
     database: DatabaseConfig
     backup: BackupConfig
     storage: StorageConfig
+    notifications: NotificationsConfig
 
 
 def _expand_env(value: Any) -> Any:
@@ -64,6 +73,7 @@ def load_config(config_path: str | Path) -> AppConfig:
     db_raw = expanded.get("database", {})
     backup_raw = expanded.get("backup", {})
     storage_raw = expanded.get("storage", {})
+    notifications_raw = expanded.get("notifications", {})
 
     database = DatabaseConfig(
         engine=str(db_raw.get("engine", "")).strip().lower(),
@@ -100,4 +110,16 @@ def load_config(config_path: str | Path) -> AppConfig:
         secret_access_key=str(storage_raw.get("secret_access_key", "")),
     )
 
-    return AppConfig(database=database, backup=backup, storage=storage)
+    notifications = NotificationsConfig(
+        enabled=bool(notifications_raw.get("enabled", False)),
+        discord_webhook_url=str(notifications_raw.get("discord_webhook_url", "")),
+        telegram_bot_token=str(notifications_raw.get("telegram_bot_token", "")),
+        telegram_chat_id=str(notifications_raw.get("telegram_chat_id", "")),
+    )
+
+    return AppConfig(
+        database=database,
+        backup=backup,
+        storage=storage,
+        notifications=notifications,
+    )

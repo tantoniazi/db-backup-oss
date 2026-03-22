@@ -9,6 +9,8 @@ Open-source project to backup MySQL or PostgreSQL, compress the dump, keep only 
 - Gzip compression (`.sql.gz`)
 - Local retention: keep only the latest 2 backups
 - Remote retention: keep only the latest 3 backups in object storage
+- Interactive setup wizard for quick onboarding
+- Notifications for automatic backups via Discord and/or Telegram
 - Upload provider abstraction:
   - built-in `s3`
   - built-in `noop` (no upload)
@@ -57,12 +59,25 @@ Use one of the ready templates:
 
 You can also copy `config/config.example.yaml` to `config/config.yaml`.
 
+### Setup Wizard
+
+Generate a full config interactively:
+
+```bash
+db-backup --wizard --config config/config.yaml
+```
+
+The wizard asks for database, retention, storage, and notifications, then writes a ready-to-use YAML file.
+
 Use env vars for secrets:
 
 ```bash
 export DB_PASSWORD='your-db-password'
 export LINODE_ACCESS_KEY='your-linode-access-key'
 export LINODE_SECRET_KEY='your-linode-secret-key'
+export DISCORD_WEBHOOK_URL='https://discord.com/api/webhooks/...'
+export TELEGRAM_BOT_TOKEN='123456:ABCDEF'
+export TELEGRAM_CHAT_ID='-1001234567890'
 ```
 
 ## Run
@@ -85,6 +100,8 @@ The command will:
 2. Keep only last 2 local backups for the same database
 3. Upload to S3-compatible bucket
 4. Keep only last 3 remote backups for the same database
+
+When notifications are enabled, success/failure messages are sent to Discord and/or Telegram.
 
 ## Linode Object Storage (S3 compatible)
 
@@ -112,6 +129,24 @@ storage:
 ```
 
 The custom class receives `StorageConfig` in the constructor.
+
+## Notifications
+
+In YAML:
+
+```yaml
+notifications:
+  enabled: true
+  discord_webhook_url: ${DISCORD_WEBHOOK_URL}
+  telegram_bot_token: ${TELEGRAM_BOT_TOKEN}
+  telegram_chat_id: ${TELEGRAM_CHAT_ID}
+```
+
+Notes:
+
+- If only Discord is configured, only Discord messages are sent.
+- If only Telegram is configured, only Telegram messages are sent.
+- If both are configured, both receive notifications.
 
 ## Cron example
 
