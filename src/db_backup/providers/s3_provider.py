@@ -46,7 +46,26 @@ class S3Provider:
                 time.sleep(sleep_seconds)
         raise RuntimeError(f"S3 operation '{operation_name}' failed after retries: {last_error}")
 
+    def _ensure_remote_prefixes(self, remote_key: str) -> None:
+        parts = [p for p in remote_key.split("/") if p]
+        if len(parts) <= 1:
+            return
+
+        current: list[str] = []
+        for segment in parts[:-1]:
+            current.append(segment)
+            folder_key = "/".join(current) + "/"
+            self._retry(
+                "create_prefix",
+                lambda folder_key=folder_key: self._client.put_object(
+                    Bucket=self._bucket,
+                    Key=folder_key,
+                    Body=b"",
+                ),
+            )
+
     def upload_file(self, local_path: Path, remote_key: str) -> None:
+        self._ensure_remote_prefixes(remote_key)
         self._retry(
             "upload_file",
             lambda: self._client.upload_file(str(local_path), self._bucket, remote_key),
@@ -62,9 +81,12 @@ class S3Provider:
 
         for page in pages:
             for item in page.get("Contents", []):
+                key = item["Key"]
+                if key.endswith("/"):
+                    continue
                 objects.append(
                     RemoteObject(
-                        key=item["Key"],
+                        key=key,
                         last_modified=item["LastModified"],
                     )
                 )

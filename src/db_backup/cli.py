@@ -13,9 +13,22 @@ from db_backup.setup_wizard import run_setup_wizard
 
 
 def _build_remote_key(prefix: str, engine: str, db_name: str, file_name: str) -> str:
-    clean_prefix = prefix.strip("/")
-    parts = [clean_prefix, engine, db_name, file_name] if clean_prefix else [engine, db_name, file_name]
-    return "/".join(parts)
+    parts: list[str] = []
+    if prefix.strip("/"):
+        parts.extend([p for p in prefix.strip("/").split("/") if p])
+
+    for segment in (engine, db_name, file_name):
+        if segment:
+            parts.append(segment)
+
+    # Avoid duplicated adjacent segments like mysql/mysql when prefix already includes engine.
+    deduped: list[str] = []
+    for segment in parts:
+        if deduped and deduped[-1] == segment:
+            continue
+        deduped.append(segment)
+
+    return "/".join(deduped)
 
 
 def run(config_path: Path) -> None:
