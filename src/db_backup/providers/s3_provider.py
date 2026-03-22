@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import time
+import logging
 
 import boto3
 from botocore.config import Config
@@ -19,7 +20,7 @@ class S3Provider:
         self._max_attempts = 4
         client_config = Config(
             signature_version="s3v4",
-            s3={"addressing_style": "path"},
+            s3={"addressing_style": config.addressing_style},
             retries={"max_attempts": 8, "mode": "standard"},
             connect_timeout=10,
             read_timeout=60,
@@ -65,7 +66,14 @@ class S3Provider:
             )
 
     def upload_file(self, local_path: Path, remote_key: str) -> None:
-        self._ensure_remote_prefixes(remote_key)
+        try:
+            self._ensure_remote_prefixes(remote_key)
+        except RuntimeError as exc:
+            # S3 is flat storage; folder markers are optional.
+            logging.warning(
+                "Skipping remote prefix creation due to error: %s",
+                exc,
+            )
         self._retry(
             "upload_file",
             lambda: self._client.upload_file(str(local_path), self._bucket, remote_key),

@@ -14,6 +14,7 @@ backup:
 storage:
   provider: s3
   keep_remote: 3
+  addressing_style: virtual
   bucket: my-linode-bucket
   prefix: db-backups
   endpoint_url: https://us-southeast-1.linodeobjects.com

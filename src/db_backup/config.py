@@ -31,6 +31,7 @@ class StorageConfig:
     keep_remote: int = 3
     bucket: str = ""
     prefix: str = "db-backups"
+    addressing_style: str = "auto"
     endpoint_url: str = ""
     region: str = "us-east-1"
     access_key_id: str = ""
@@ -104,11 +105,15 @@ def load_config(config_path: str | Path) -> AppConfig:
         keep_remote=int(storage_raw.get("keep_remote", 3)),
         bucket=str(storage_raw.get("bucket", "")),
         prefix=str(storage_raw.get("prefix", "db-backups")).strip("/"),
+        addressing_style=str(storage_raw.get("addressing_style", "auto")).strip().lower(),
         endpoint_url=str(storage_raw.get("endpoint_url", "")),
         region=str(storage_raw.get("region", "us-east-1")),
         access_key_id=str(storage_raw.get("access_key_id", "")),
         secret_access_key=str(storage_raw.get("secret_access_key", "")),
     )
+
+    if storage.addressing_style not in {"auto", "path", "virtual"}:
+        raise ValueError("storage.addressing_style must be one of: auto, path, virtual")
 
     notifications = NotificationsConfig(
         enabled=bool(notifications_raw.get("enabled", False)),

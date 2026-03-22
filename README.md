@@ -109,6 +109,7 @@ Set in YAML:
 
 - `storage.provider: s3`
 - `storage.endpoint_url: https://<region>.linodeobjects.com`
+- `storage.addressing_style: virtual` (recommended for Linode)
 - `storage.bucket`
 - `storage.access_key_id`
 - `storage.secret_access_key`
@@ -164,6 +165,7 @@ Notes:
 
 - `ConnectionClosedError` during S3 upload
   - Usually transient network/TLS issue with endpoint.
+  - For Linode, prefer `storage.addressing_style: virtual`.
   - The uploader now retries automatically; if it persists, validate `endpoint_url`, bucket policy, and firewall/DNS connectivity.
 
 ## Cron example
