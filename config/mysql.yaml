@@ -1,0 +1,22 @@
+database:
+  engine: mysql
+  host: 127.0.0.1
+  port: 3306
+  name: app_db
+  user: root
+  password: ${DB_PASSWORD}
+  extra_args: []
+
+backup:
+  output_root: ./backups
+  local_keep: 2
+
+storage:
+  provider: s3
+  keep_remote: 3
+  bucket: my-linode-bucket
+  prefix: db-backups
+  endpoint_url: https://us-southeast-1.linodeobjects.com
+  region: us-southeast-1
+  access_key_id: ${LINODE_ACCESS_KEY}
+  secret_access_key: ${LINODE_SECRET_KEY}

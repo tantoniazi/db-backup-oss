@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "db-backup-oss"
+version = "0.1.0"
+description = "Open-source database backup tool for MySQL/PostgreSQL with S3-compatible upload and retention"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Community" }]
+license = { text = "MIT" }
+dependencies = [
+  "PyYAML>=6.0",
+  "boto3>=1.34.0",
+]
+
+[project.scripts]
+db-backup = "db_backup.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
