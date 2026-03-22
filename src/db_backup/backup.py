@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import os
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -10,12 +11,22 @@ from pathlib import Path
 from db_backup.config import DatabaseConfig
 
 
+def _resolve_mysql_dump_binary() -> str:
+    # Prefer mysqldump for compatibility, but MariaDB now recommends mariadb-dump.
+    if shutil.which("mysqldump"):
+        return "mysqldump"
+    if shutil.which("mariadb-dump"):
+        return "mariadb-dump"
+    return "mysqldump"
+
+
 def _dump_command(db: DatabaseConfig) -> tuple[list[str], dict[str, str]]:
     env = os.environ.copy()
     if db.engine == "mysql":
         env["MYSQL_PWD"] = db.password
+        mysql_dump_bin = _resolve_mysql_dump_binary()
         command = [
-            "mysqldump",
+            mysql_dump_bin,
             "--single-transaction",
             "--quick",
             "--routines",
@@ -50,6 +61,31 @@ def _dump_command(db: DatabaseConfig) -> tuple[list[str], dict[str, str]]:
     return command, env
 
 
+def _humanize_dump_error(db: DatabaseConfig, return_code: int, stderr_text: str) -> str:
+    if db.engine == "mysql":
+        if "1698" in stderr_text or "Access denied" in stderr_text:
+            return (
+                "MySQL authentication failed. Check database.user/database.password and grants. "
+                "On MariaDB, root may use unix_socket auth; create a dedicated user for backups or "
+                "configure proper authentication for TCP host/port. "
+                f"Original error: {stderr_text}"
+            )
+        if re.search(r"not found|No such file", stderr_text, flags=re.IGNORECASE):
+            return (
+                "MySQL dump tool not available. Install mysql-client or mariadb-client. "
+                f"Original error: {stderr_text}"
+            )
+
+    if db.engine == "postgres":
+        if "password authentication failed" in stderr_text.lower():
+            return (
+                "PostgreSQL authentication failed. Check database.user/database.password and pg_hba.conf rules. "
+                f"Original error: {stderr_text}"
+            )
+
+    return f"Backup command failed with code {return_code}: {stderr_text}"
+
+
 def create_compressed_backup(db: DatabaseConfig, output_root: Path) -> Path:
     engine_dir = output_root / db.engine
     engine_dir.mkdir(parents=True, exist_ok=True)
@@ -82,6 +118,6 @@ def create_compressed_backup(db: DatabaseConfig, output_root: Path) -> Path:
     if return_code != 0:
         output_path.unlink(missing_ok=True)
         stderr_text = stderr_bytes.decode("utf-8", errors="ignore").strip()
-        raise RuntimeError(f"Backup command failed with code {return_code}: {stderr_text}")
+        raise RuntimeError(_humanize_dump_error(db, return_code, stderr_text))
 
     return output_path

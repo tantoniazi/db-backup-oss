@@ -148,6 +148,24 @@ Notes:
 - If only Telegram is configured, only Telegram messages are sent.
 - If both are configured, both receive notifications.
 
+## Troubleshooting
+
+- `Discord notification failed: unknown url type: '${DISCORD_WEBHOOK_URL}'`
+  - Cause: env var not exported.
+  - Fix: export `DISCORD_WEBHOOK_URL` before running, or disable notifications.
+
+- `Telegram notification failed: HTTP Error 404: Not Found`
+  - Cause: invalid bot token or unresolved env var in `telegram_bot_token`.
+  - Fix: verify token/chat id and export env vars.
+
+- `Access denied for user 'root'@'localhost'` (MySQL/MariaDB error 1698)
+  - Cause: root often uses socket auth in MariaDB.
+  - Fix: create a dedicated backup user with password and proper grants, then update YAML.
+
+- `ConnectionClosedError` during S3 upload
+  - Usually transient network/TLS issue with endpoint.
+  - The uploader now retries automatically; if it persists, validate `endpoint_url`, bucket policy, and firewall/DNS connectivity.
+
 ## Cron example
 
 Daily at 02:00:
